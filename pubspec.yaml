@@ -1,0 +1,28 @@
+name: iforenta_like_app
+description: Food delivery UI sample (Arabic, GetX)
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  get: ^4.6.6
+  carousel_slider: ^5.0.0
+  flutter_svg: ^2.0.10+1      # اختياري لو بتستخدم SVG
+
+  # دعم اللغات (مطلوب عشان locale: ar)
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/photo_2025-09-02_15-31-32.jpg

@@ -1,60 +1,75 @@
 import 'package:get/get.dart';
+import '../../core/api_service.dart';
 
 class HomeController extends GetxController {
-  // البانرات
-  final heroBanners = <_Banner>[
-    _Banner(
-      image: 'https://images.unsplash.com/photo-1550317138-10000687a72b?w=1400',
-      title: 'مع عيلتي',
-      subtitle: 'بوكس بيتزا + مشروبات',
-    ),
-    _Banner(
-      image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=1400',
-      title: 'ألذ برغر',
-      subtitle: 'لحم طازج وجبن ذايب',
-    ),
-  ].obs;
+  final _api = ApiService();
 
-  // 👈 الأقسام (المفقودة سابقًا)
-  final categories = <Category>[
-    Category('بيتزا',
-        'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400'),
-    Category('هامبورغر',
-        'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400'),
-    Category('شاورما',
-        'https://images.unsplash.com/photo-1617692855027-2e7a0d4bcee2?w=400'),
-  ].obs;
+  // ✅ الأقسام من القاعدة
+  final categories = <Category>[].obs;
 
-  // الأصناف/المطاعم
-  final restaurants = <RestaurantItem>[
-    RestaurantItem(
-      id: 1,
-      name: 'العيد الكبير',
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1200',
-      tags: ['لحم', 'خس', 'جبنة', 'صلصات', 'بصل'],
-      price: 12,
-      description: 'برغر لحم طازج مع جبنة ذايبة وخس وصوصات خاصة.',
-      discountText: '٪10 خصم',
-    ),
-    RestaurantItem(
-      id: 2,
-      name: 'مشاوي الضيعة',
-      rating: 4.5,
-      image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=1200',
-      tags: ['مشاوي', 'سندوتشات'],
-      price: 18,
-      description: 'سندوتشات مشاوي مشكلة مع تتبيلة مميزة.',
-    ),
-  ].obs;
+  // ✅ الأصناف/العروض المميزة من القاعدة
+  final restaurants = <RestaurantItem>[].obs;
 
-  Future<void> refreshData() async =>
-      Future.delayed(const Duration(milliseconds: 600));
+  // حالة تحميل
+  final loading = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchAll();
+  }
+
+  Future<void> fetchAll() async {
+    if (loading.value) return;
+    loading.value = true;
+    try {
+      // 1) جلب الأقسام
+      final cRes = await _api.get("/categories/list.php");
+      if (cRes['ok'] == true && cRes['categories'] is List) {
+        categories.value = (cRes['categories'] as List).map((e) {
+          final m = e as Map;
+          return Category(
+            (m['name'] ?? '').toString(),
+            (m['image_url'] ?? '').toString(),
+            id: int.tryParse((m['id'] ?? '0').toString()), // ✅ نمرر id
+          );
+        }).toList();
+      }
+
+      // 2) جلب العروض (items مميزة)
+      final iRes = await _api.get("/items/list.php", query: {'featured': '1'});
+      if (iRes['ok'] == true && iRes['items'] is List) {
+        restaurants.value = (iRes['items'] as List).map((j) {
+          final m = j as Map;
+          final price = double.tryParse((m['price'] ?? '0').toString()) ?? 0.0;
+          final discount = (m['discount'] ?? 0).toString();
+          return RestaurantItem(
+            id: int.tryParse((m['id'] ?? '0').toString()) ?? 0,
+            name: (m['name'] ?? '').toString(),
+            image: (m['image_url'] ?? '').toString(),
+            tags: const [], // لا يوجد جدول Tags حالياً
+            rating: 4.6,    // قيمة مؤقتة لعدم وجود عمود rating في DB
+            price: price,
+            description: (m['description'] ?? '').toString(),
+            discountText: (discount != '0' && discount != '0.00' && discount.isNotEmpty)
+                ? 'خصم $discount%'
+                : null,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      // تقدر تطبع الخطأ أو تعرض Snackbar
+      // print("Error: $e");
+    } finally {
+      loading.value = false;
+    }
+  }
 }
 
 class Category {
   final String name, image;
-  Category(this.name, this.image);
+  final int? id; // ✅ جديد: معرّف القسم من القاعدة
+  Category(this.name, this.image, {this.id});
 }
 
 class RestaurantItem {
@@ -75,9 +90,4 @@ class RestaurantItem {
     required this.description,
     this.discountText,
   });
-}
-
-class _Banner {
-  final String image, title, subtitle;
-  _Banner({required this.image, required this.title, required this.subtitle});
 }

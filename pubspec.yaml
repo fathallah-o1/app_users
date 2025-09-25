@@ -8,6 +8,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  google_maps_flutter: ^2.7.0
+  geolocator: ^11.0.0
+
+  http: ^1.2.2
   get: ^4.6.6
   carousel_slider: ^5.0.0
   flutter_svg: ^2.0.10+1      # اختياري لو بتستخدم SVG
